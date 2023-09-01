@@ -105,6 +105,7 @@ export interface InitOptions {
   plan?: Plan
   retryQueue?: boolean
   obfuscate?: boolean
+  destinationTimeout?: number
   /**
    * This callback allows you to update/mutate CDN Settings.
    * This is called directly after settings are fetched from the CDN.
@@ -542,7 +543,7 @@ export class Analytics
   async ready(
     callback: Function = (res: Promise<unknown>[]): Promise<unknown>[] => res
   ): Promise<unknown> {
-    return Promise.all(
+    return Promise.allSettled(
       this.queue.plugins.map((i) => (i.ready ? i.ready() : Promise.resolve()))
     ).then((res) => {
       callback(res)
