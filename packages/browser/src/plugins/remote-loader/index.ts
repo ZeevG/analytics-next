@@ -12,6 +12,7 @@ import { Context, ContextCancelation } from '../../core/context'
 import { Analytics, InitOptions } from '../../core/analytics'
 import { pTimeout } from '@segment/analytics-core'
 import { createDeferred } from '../../lib/create-deferred'
+import { DEFAULT_DESTINATION_TIMEOUT } from '../../core/constants'
 
 export interface RemotePlugin {
   /** The name of the remote plugin */
@@ -32,7 +33,7 @@ export class ActionDestination implements DestinationPlugin {
   type: Plugin['type']
 
   alternativeNames: string[] = []
-  options: InitOptions
+  destinationTimeout: number
 
   private loadPromise = createDeferred<unknown>()
 
@@ -40,10 +41,10 @@ export class ActionDestination implements DestinationPlugin {
 
   action: Plugin
 
-  constructor(name: string, action: Plugin, options: InitOptions) {
+  constructor(name: string, action: Plugin, destinationTimeout?: number) {
     this.action = action
     this.name = name
-    this.options = options
+    this.destinationTimeout = destinationTimeout ?? DEFAULT_DESTINATION_TIMEOUT
     this.type = action.type
     this.alternativeNames.push(action.name)
   }
@@ -136,7 +137,7 @@ export class ActionDestination implements DestinationPlugin {
 
       const ret = await pTimeout(
         this.action.load(ctx, analytics),
-        this.options.destinationTimeout!
+        this.destinationTimeout
       )
       this.loadPromise.resolve(ret)
       return ret
@@ -242,7 +243,7 @@ export async function remoteLoader(
   settings: LegacySettings,
   userIntegrations: Integrations,
   mergedIntegrations: Record<string, JSONObject>,
-  options: InitOptions,
+  options?: InitOptions,
   routingMiddleware?: DestinationMiddlewareFunction,
   pluginSources?: PluginFactory[]
 ): Promise<Plugin[]> {
@@ -258,7 +259,7 @@ export async function remoteLoader(
         const pluginFactory =
           pluginSources?.find(
             ({ pluginName }) => pluginName === remotePlugin.name
-          ) || (await loadPluginFactory(remotePlugin, options.obfuscate))
+          ) || (await loadPluginFactory(remotePlugin, options?.obfuscate))
 
         if (pluginFactory) {
           const plugin = await pluginFactory({
@@ -277,7 +278,7 @@ export async function remoteLoader(
             const wrapper = new ActionDestination(
               remotePlugin.creationName,
               plugin,
-              options
+              options?.destinationTimeout
             )
 
             /** Make sure we only apply destination filters to actions of the "destination" type to avoid causing issues for hybrid destinations */
