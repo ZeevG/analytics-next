@@ -125,7 +125,7 @@ export class ActionDestination implements DestinationPlugin {
   }
 
   async load(ctx: Context, analytics: Analytics): Promise<unknown> {
-    if (this.loadPromise.settled) {
+    if (this.loadPromise.isSettled()) {
       return this.loadPromise
     }
 
