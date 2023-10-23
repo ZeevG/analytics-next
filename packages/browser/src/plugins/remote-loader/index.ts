@@ -134,7 +134,9 @@ export class ActionDestination implements DestinationPlugin {
         `method:load`,
         `action_plugin_name:${this.action.name}`,
       ])
-
+      if (this.action.name === 'google') {
+        throw new Error('force error')
+      }
       const ret = await pTimeout(
         this.action.load(ctx, analytics),
         this.destinationTimeout
@@ -146,6 +148,8 @@ export class ActionDestination implements DestinationPlugin {
         `method:load`,
         `action_plugin_name:${this.action.name}`,
       ])
+
+      console.log('caught ererr')
 
       this.loadPromise.reject(error)
       throw error
