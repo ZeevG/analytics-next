@@ -86,13 +86,17 @@ export class ActionDestination implements DestinationPlugin {
         transformedContext = await this.transform(ctx)
       }
 
-      await this.ready()
-
       try {
         ctx.stats.increment('analytics_js.action_plugin.invoke', 1, [
           `method:${methodName}`,
           `action_plugin_name:${this.action.name}`,
         ])
+
+        if (!(await this.ready())) {
+          throw new Error(
+            'Something prevented the destination from getting ready'
+          )
+        }
 
         await this.action[methodName]!(transformedContext)
       } catch (error) {
@@ -120,13 +124,19 @@ export class ActionDestination implements DestinationPlugin {
     return this.action.isLoaded()
   }
 
-  ready(): Promise<unknown> {
-    return this.loadPromise.promise
+  async ready(): Promise<boolean> {
+    const loadOutput = await this.loadPromise.promise
+    return !(loadOutput instanceof Error)
   }
 
   async load(ctx: Context, analytics: Analytics): Promise<unknown> {
     if (this.loadPromise.isSettled()) {
-      return this.loadPromise
+      const prevLoad = await this.loadPromise.promise
+      if (prevLoad instanceof Error) {
+        throw prevLoad
+      } else {
+        return prevLoad
+      }
     }
 
     try {
@@ -134,13 +144,12 @@ export class ActionDestination implements DestinationPlugin {
         `method:load`,
         `action_plugin_name:${this.action.name}`,
       ])
-      if (this.action.name === 'google') {
-        throw new Error('force error')
-      }
+
       const ret = await pTimeout(
         this.action.load(ctx, analytics),
-        this.destinationTimeout
+        this.type === 'destination' ? this.destinationTimeout : Infinity
       )
+
       this.loadPromise.resolve(ret)
       return ret
     } catch (error) {
@@ -149,9 +158,7 @@ export class ActionDestination implements DestinationPlugin {
         `action_plugin_name:${this.action.name}`,
       ])
 
-      console.log('caught ererr')
-
-      this.loadPromise.reject(error)
+      this.loadPromise.resolve(error)
       throw error
     }
   }
