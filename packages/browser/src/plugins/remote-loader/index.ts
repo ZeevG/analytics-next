@@ -145,12 +145,14 @@ export class ActionDestination implements DestinationPlugin {
         `action_plugin_name:${this.action.name}`,
       ])
 
-      const ret = await pTimeout(
-        this.action.load(ctx, analytics),
-        this.type === 'destination' ? this.destinationTimeout : Infinity
-      )
+      const loadP = this.action.load(ctx, analytics)
 
-      this.loadPromise.resolve(ret)
+      const ret =
+        this.type === 'destination'
+          ? pTimeout(loadP, this.destinationTimeout)
+          : loadP
+
+      this.loadPromise.resolve(await ret)
       return ret
     } catch (error) {
       ctx.stats.increment('analytics_js.action_plugin.invoke.error', 1, [
