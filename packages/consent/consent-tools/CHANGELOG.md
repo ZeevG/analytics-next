@@ -1,5 +1,11 @@
 # @segment/analytics-consent-tools
 
+## 1.0.1
+
+### Patch Changes
+
+- [#997](https://github.com/segmentio/analytics-next/pull/997) [`dcf279c`](https://github.com/segmentio/analytics-next/commit/dcf279c4591c84952c78022ddfbad945aab8cfde) Thanks [@silesky](https://github.com/silesky)! - Refactor internally to add AnalyticsService
+
 ## 1.0.0
 
 ### Major Changes
