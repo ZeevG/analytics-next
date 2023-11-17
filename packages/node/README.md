@@ -121,7 +121,8 @@ export default async (req: NextRequest) => {
 };
 ```
 
-### Usage in Cloudflare Workers
+### Usage in Cloudflare Workers/Pages
+Cloudflare provides the [waitUntil()](https://developers.cloudflare.com/workers/runtime-apis/handlers/fetch/#contextwaituntil) function which can be used to extend the lifetime of the fetch event without blocking the response.
 ```ts
 import { Analytics, Context } from '@segment/analytics-node';
 
@@ -132,15 +133,15 @@ export default {
     ctx: ExecutionContext
   ): Promise<Response> {
     const analytics = new Analytics({
-      maxEventsInBatch: 1,
       writeKey: '<MY_WRITE_KEY>',
     }).on('error', console.error);
 
-    await new Promise((resolve, reject) =>
-      analytics.track({ ... }, resolve)
-    );
+    
+    analytics.track({ ... })
 
-    ...
+    // Use waitUntill to extend the lifetime of the fetch event without blocking the response
+    ctx.waitUntil(analytics.closeAndFlush())
+
     return new Response(...)
   },
 };
